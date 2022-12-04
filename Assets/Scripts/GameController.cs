@@ -2,6 +2,9 @@
 using System.Collections;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using System;
+using System.Collections.Generic;
+using static GameController;
 
 public class GameController : MonoBehaviour {
 
@@ -36,6 +39,7 @@ public class GameController : MonoBehaviour {
     public Text endScore;
     public Image alienImage;
     public static bool gameEnded = false;
+    public GameObject horizontalUpperWall;
     public GameObject horizontalWall;
     public GameObject verticalWall;
     public GameObject playerShadowPrefab;
@@ -53,9 +57,9 @@ public class GameController : MonoBehaviour {
     private float timeCounter = 0;
     private float playerStartPosX = 0;
     private float vel = 20F;
-    private Vector3 refTopCenter = new Vector3(0, 1, -17);
+    private Vector3 refTopCenter = new Vector3(100, 3, -17);
     private Vector3 refMidCenter = new Vector3(50, 1, -17);
-    private Vector3 refBottomCenter = new Vector3(100, 1, -17);
+    private Vector3 refBottomCenter = new Vector3(0, 1, -17);
     private Vector3 currentRef;
     private float mouseDownY;
     private float mouseUpY;
@@ -68,7 +72,12 @@ public class GameController : MonoBehaviour {
     private PickUpFactory pickUpFact;
     private PlayerController playerControl;
     private int maxPickupCount = 3;
-    private int[] viewPickupCounts = {};
+    private Dictionary<View, int> viewPickupCounts = new Dictionary<View, int>
+	{
+		{ View.VIEW_TOP, 0 },
+		{ View.VIEW_MID, 0 },
+		{ View.VIEW_BOTTOM, 0 }
+	};
     private bool needLife = false;
     private float treeLifeTime = 1;
     [SerializeField]
@@ -78,25 +87,23 @@ public class GameController : MonoBehaviour {
     {
         pickUpFact = GetComponent<PickUpFactory>();
         //UnityEngine.Profiling.Profiler.maxUsedMemory = 3;
-        // player initial position
-        Vector3 spawnPosition = new Vector3(0, 1, -16);
+
         // wall rotation
         Quaternion spawnRotation = Quaternion.identity;
-        // generate player object
-        spawnPosition = new Vector3(0, 0.1F, -16);
-        playerShadow = (GameObject)Instantiate(playerShadowPrefab, spawnPosition, spawnRotation);
+		// generate player object
+		Vector3 spawnPosition = new Vector3(0, 0.1F, -16);
+        playerShadow = Instantiate(playerShadowPrefab, spawnPosition, spawnRotation);
         spawnPosition = new Vector3(0, 1, -16);
         WallController.speed = 0;
         GridController.speed = 0;
         PickUpController.speed = 0;
         WallController.maxSpeed = maxSpeed;
-        currentRef = refTopCenter;
+        currentRef = refBottomCenter;
         Screen.orientation = ScreenOrientation.Portrait;
         playerControl = player.GetComponent<PlayerController>();
         scoreText.text = playerControl.getScore().ToString();
-        viewPickupCounts = new int[3];
 
-        StartCoroutine(SpawnWalls());
+		StartCoroutine(SpawnWalls());
         StartCoroutine(UpdateSpeed());
         StartCoroutine(SpawnPickUps());
         StartCoroutine(reduceTreeLife());
@@ -110,52 +117,59 @@ public class GameController : MonoBehaviour {
 
     IEnumerator SpawnPickUps()
     {
+		Array values = Enum.GetValues(typeof(View));
+		System.Random random = new System.Random();
         Vector3 PickUpPos;
-        int sheildPosX = 0;
-        int sheildPosView = 0;
-        int alienPosView = 0;
-        int greenAlienPosX = 0;
+        View sheildPosView;
+		View alienPosView;
+
         while (!gameEnded)
         {
-            sheildPosView = Random.Range(0, 4);
-            sheildPosX = Random.Range(-1, 1);
-            yield return new WaitForSeconds(13F / speed);
+			sheildPosView = (View)values.GetValue(random.Next(values.Length));
 
             if (needLife)
             {
-                if (sheildPosView == 1)
-                {
-                    // 1st gameplay view
-                    PickUpPos = new Vector3(refTopCenter.x + sheildPosX * 2.5F, refTopCenter.y, 15);
-                    pickUpFact.createSheild(PickUpPos, Quaternion.identity);
-                }
-                else if (sheildPosView == 2)
-                {
-                    // 2nd gameplay view
-                    PickUpPos = new Vector3(refMidCenter.x + sheildPosX * 2.5F, refMidCenter.y, 15);
-                    pickUpFact.createSheild(PickUpPos, Quaternion.identity);
-                }
-                else if (sheildPosView == 3)
-                {
-                    // 3rd gameplay view
-                    PickUpPos = new Vector3(refBottomCenter.x + sheildPosX * 2.5F, refBottomCenter.y, 15);
-                    pickUpFact.createSheild(PickUpPos, Quaternion.identity);
-                }
+                PickUpPos = GetPickupPosition(sheildPosView);
+				pickUpFact.createSheild(PickUpPos, Quaternion.identity);
             }
 
-
-            alienPosView = Random.Range(1, 4);
-            while(sheildPosView == alienPosView)
-                alienPosView = Random.Range(1, 4);
-            if (viewPickupCounts[alienPosView-1] < maxPickupCount-2)
+            do
             {
-                greenAlienPosX = Random.Range(-1, 1);
-                PickUpPos = new Vector3((alienPosView-1) * 50 + sheildPosX * 2.5F, currentRef.y, 15);
-                pickUpFact.createAlien(PickUpPos, Quaternion.identity);
+				alienPosView = (View)values.GetValue(random.Next(values.Length));
+			} while (sheildPosView == alienPosView);
+
+            if (viewPickupCounts[alienPosView] < maxPickupCount-2)
+            {
+                PickUpPos = GetPickupPosition(alienPosView);
+				pickUpFact.createAlien(PickUpPos, Quaternion.identity);
             }
-        }
+
+			yield return new WaitForSeconds(13F / speed);
+		}
         
     }
+
+    private Vector3 GetPickupPosition(View view)
+    {
+        Vector3 pos = new Vector3();
+		int posX = UnityEngine.Random.Range(-1, 1);
+
+        switch (view)
+        {
+            case View.VIEW_TOP:
+                pos = new Vector3(refTopCenter.x + posX * 2.5F, refTopCenter.y, 15);
+                break;
+            case View.VIEW_MID:
+                pos = new Vector3(refMidCenter.x + posX * 2.5F, refMidCenter.y, 15);
+                break;
+            case View.VIEW_BOTTOM:
+                pos = new Vector3(refBottomCenter.x + posX * 2.5F, refBottomCenter.y, 15);
+                break;
+			default: break;
+        }
+
+        return pos;
+	}
 
     IEnumerator SpawnWalls()
     {
@@ -170,14 +184,14 @@ public class GameController : MonoBehaviour {
 
         for (int i = 0; i < 3; ++i )
         {
-            // create wall for view 1
+            // create wall for bottom view
             spawnPosition = new Vector3(0, 0.75F, 20);
             Instantiate(horizontalWall, spawnPosition, spawnRotation);
 
-            // create wall for view 2
+            // create wall middle view
             count = 2;
             // there are 3 different positions for vertical walls
-            verticalPosition = Random.Range(1, 3);
+            verticalPosition = UnityEngine.Random.Range(1, 3);
             if (oldVerticalPos == verticalPosition)
                 verticalPosition += 1;
             oldVerticalPos = verticalPosition;
@@ -229,9 +243,9 @@ public class GameController : MonoBehaviour {
 
                 }
             }
-            // create wall for view 3
-            spawnPosition = new Vector3(100, 0.75F, 20);
-            Instantiate(horizontalWall, spawnPosition, spawnRotation);
+            // create wall for top view
+            spawnPosition = new Vector3(100, 2.9F, 20);
+            Instantiate(horizontalUpperWall, spawnPosition, spawnRotation);
             yield return new WaitForSeconds(13F / speed);
         }
     }
@@ -266,24 +280,13 @@ public class GameController : MonoBehaviour {
 
     public void movePlayer(State playerState)
     {
-        switch(playerState)
-        {
-            case State.STATE_JUMPING:
-                if (currentState != playerState && currentView == View.VIEW_TOP)
-                {
-                    currentState = playerState;
-                    jumpPosY = player.transform.position.y;
-                }
-                break;
-            case State.STATE_DUCKING:
-                if (currentState != playerState && currentView == View.VIEW_BOTTOM)
-                {
-                    currentState = playerState;
-                    duckPosY = player.transform.position.y;
-                }
-                break;
-        }
-    }
+		if (currentState != playerState)
+		{
+			currentState = playerState;
+			jumpPosY = player.transform.position.y;
+			duckPosY = player.transform.position.y;
+		}
+	}
 
     public void movePlayer(LaneState playerState)
     {
@@ -326,6 +329,8 @@ public class GameController : MonoBehaviour {
         switch(currentState)
         {
             case State.STATE_JUMPING:
+                if (currentView != View.VIEW_BOTTOM)
+                    break;
                 if (jumpPosY < 4 && !jumped)
                 {
                     player.transform.position = new Vector3(player.transform.position.x, jumpPosY, player.transform.position.z );
@@ -350,17 +355,19 @@ public class GameController : MonoBehaviour {
                 break;
             // inverse jump
             case State.STATE_DUCKING:
-                if (duckPosY > -4 && !ducked)
+				if (currentView != View.VIEW_TOP)
+					break;
+				if (duckPosY > 0 && !ducked)
                 {
                     player.transform.position = new Vector3(player.transform.position.x, duckPosY, player.transform.position.z);
-                    accelerator += 0.01F;
+                    accelerator += 0.05F;
                     duckPosY -= Time.deltaTime * (accelerator + speed);
                 }
                 else if(player.transform.position.y < currentRef.y)
                 {
                     ducked = true;
                     player.transform.position = new Vector3(player.transform.position.x, duckPosY, player.transform.position.z);
-                    accelerator += 0.01F;
+                    accelerator += 0.05F;
                     duckPosY += Time.deltaTime * (speed + accelerator);
                 }
                 else
@@ -397,8 +404,8 @@ public class GameController : MonoBehaviour {
             {
                 if (mouseDownY > Screen.height * 2 / 3)
                 {
-                    currentRef = refBottomCenter;
-                    changeView(View.VIEW_BOTTOM);
+                    currentRef = refTopCenter;
+                    changeView(View.VIEW_TOP);
                 }
                 else if ((mouseDownY >= Screen.height * 1 / 3) && (mouseDownY <= Screen.height * 2 / 3))
                 {
@@ -407,8 +414,8 @@ public class GameController : MonoBehaviour {
                 }
                 else if (mouseDownY < Screen.height * 1 / 3)
                 {
-                    currentRef = refTopCenter;
-                    changeView(View.VIEW_TOP);
+                    currentRef = refBottomCenter;
+                    changeView(View.VIEW_BOTTOM);
                 }
                 playerControl.changeView(currentView);
             }
@@ -419,14 +426,7 @@ public class GameController : MonoBehaviour {
         else
             needLife = false;
 
-        viewPickupCounts[0] = playerControl.getTopScore();
-        viewPickupCounts[1] = playerControl.getMidScore();
-        viewPickupCounts[2] = playerControl.getBottomScore();
-
-        int totalPickupCount = 0;
-
-        for (int i = 0; i < 3; ++i)
-            totalPickupCount += viewPickupCounts[i];
+		int totalPickupCount = viewPickupCounts[View.VIEW_TOP] + viewPickupCounts[View.VIEW_MID] + viewPickupCounts[View.VIEW_BOTTOM];
 
         if (totalPickupCount >= maxPickupCount)
             maxPickupCount += 5;
@@ -444,16 +444,16 @@ public class GameController : MonoBehaviour {
             switch(newView)
             {
                 case View.VIEW_TOP:
-                    player.transform.position = new Vector3(refTopCenter.x + GetLaneXPos(currentLocation), refTopCenter.y, player.transform.position.z);
-                    playerShadow.transform.position = new Vector3(refTopCenter.x + GetLaneXPos(currentLocation), playerShadow.transform.position.y, player.transform.position.z);
-                    break;
+					player.transform.position = new Vector3(refTopCenter.x + GetLaneXPos(currentLocation), refTopCenter.y, player.transform.position.z);
+					playerShadow.transform.position = new Vector3(refTopCenter.x + GetLaneXPos(currentLocation), playerShadow.transform.position.y, player.transform.position.z);
+					break;
                 case View.VIEW_MID:
                     player.transform.position = new Vector3(refMidCenter.x + GetLaneXPos(currentLocation), refMidCenter.y, player.transform.position.z);
                     playerShadow.transform.position = new Vector3(refMidCenter.x + GetLaneXPos(currentLocation), playerShadow.transform.position.y, player.transform.position.z);
                     break;
                 case View.VIEW_BOTTOM:
-                    player.transform.position = new Vector3(refBottomCenter.x + GetLaneXPos(currentLocation), refBottomCenter.y, player.transform.position.z);
-                    playerShadow.transform.position = new Vector3(refBottomCenter.x + GetLaneXPos(currentLocation), playerShadow.transform.position.y, player.transform.position.z);
+					player.transform.position = new Vector3(refBottomCenter.x + GetLaneXPos(currentLocation), refBottomCenter.y, player.transform.position.z);
+					playerShadow.transform.position = new Vector3(refBottomCenter.x + GetLaneXPos(currentLocation), playerShadow.transform.position.y, player.transform.position.z);
                     break;
                 default:
                     break;
