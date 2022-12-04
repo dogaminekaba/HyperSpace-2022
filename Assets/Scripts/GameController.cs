@@ -77,7 +77,7 @@ public class GameController : MonoBehaviour {
     void Start()
     {
         pickUpFact = GetComponent<PickUpFactory>();
-        UnityEngine.Profiling.Profiler.maxNumberOfSamplesPerFrame = 3;
+        //UnityEngine.Profiling.Profiler.maxUsedMemory = 3;
         // player initial position
         Vector3 spawnPosition = new Vector3(0, 1, -16);
         // wall rotation

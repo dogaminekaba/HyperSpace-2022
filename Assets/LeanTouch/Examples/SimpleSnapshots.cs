@@ -8,42 +8,42 @@ public class SimpleSnapshots : MonoBehaviour
 	protected virtual void LateUpdate()
 	{
 		// Does the LineRenderer array exist?
-		if (LineRenderers != null)
+		if (LineRenderers == null)
+			return;
+
+		// Go through all LineRenderers
+		for (var i = 0; i < LineRenderers.Length; i++)
 		{
-			// Go through all LineRenderers
-			for (var i = 0; i < LineRenderers.Length; i++)
-			{
-				// Get the LineRenderer at this index
-				var lineRenderer = LineRenderers[i];
-				
-				// Has this LineRenderer been set?
-				if (lineRenderer != null)
-				{
-					// Find the finger at this index
-					var finger = Lean.LeanTouch.Fingers.Find(f => f.Index == i);
+			// Get the LineRenderer at this index
+			var lineRenderer = LineRenderers[i];
+
+			// Has this LineRenderer been set?
+			if (lineRenderer == null)
+				continue;
+
+			// Find the finger at this index
+			var finger = Lean.LeanTouch.Fingers.Find(f => f.Index == i);
 					
-					// Exists?
-					if (finger != null)
-					{
-						lineRenderer.SetVertexCount(finger.Snapshots.Count);
+			// Exists?
+			if (finger != null)
+			{
+				lineRenderer.positionCount = finger.Snapshots.Count;
 						
-						// Go through all snapshots
-						for (var j = 0; j < finger.Snapshots.Count; j++)
-						{
-							var snapshot = finger.Snapshots[j];
+				// Go through all snapshots
+				for (var j = 0; j < finger.Snapshots.Count; j++)
+				{
+					var snapshot = finger.Snapshots[j];
 							
-							if (snapshot != null)
-							{
-								lineRenderer.SetPosition(j, snapshot.GetWorldPosition(1.0f));
-							}
-						}
-					}
-					// Doesn't exist?
-					else
+					if (snapshot != null)
 					{
-						lineRenderer.SetVertexCount(0);
+						lineRenderer.SetPosition(j, snapshot.GetWorldPosition(1.0f));
 					}
 				}
+			}
+			// Doesn't exist?
+			else
+			{
+				lineRenderer.positionCount = 0;
 			}
 		}
 	}
