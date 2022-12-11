@@ -85,8 +85,9 @@ public class GameController : MonoBehaviour {
 
     void Start()
     {
-        pickUpFact = GetComponent<PickUpFactory>();
-        //UnityEngine.Profiling.Profiler.maxUsedMemory = 3;
+        Screen.SetResolution(Screen.height / 2, Screen.height, true);
+
+		pickUpFact = GetComponent<PickUpFactory>();
 
         // wall rotation
         Quaternion spawnRotation = Quaternion.identity;
@@ -189,60 +190,38 @@ public class GameController : MonoBehaviour {
             Instantiate(horizontalWall, spawnPosition, spawnRotation);
 
             // create wall middle view
-            count = 2;
             // there are 3 different positions for vertical walls
             verticalPosition = UnityEngine.Random.Range(1, 3);
             if (oldVerticalPos == verticalPosition)
-                verticalPosition += 1;
+                verticalPosition = (verticalPosition + 1) % 4;
+
             oldVerticalPos = verticalPosition;
-            if(count == 1)
-            {
-                switch (verticalPosition)
-                {
-                    case 1:
-                        spawnPosition = new Vector3(47.5F, 10, 20);
-                        Instantiate(verticalWall, spawnPosition, spawnRotation);
-                        break;
-                    case 2:
-                        spawnPosition = new Vector3(50, 10, 20);
-                        Instantiate(verticalWall, spawnPosition, spawnRotation);
-                        break;
-                    case 3:
-                        spawnPosition = new Vector3(52.5F, 10, 20);
-                        Instantiate(verticalWall, spawnPosition, spawnRotation);
-                        break;
-                    default:
-                        break;
 
-                }
-            }
-            else
+            switch (verticalPosition)
             {
-                switch (verticalPosition)
-                {
-                    case 1:
-                        spawnPosition = new Vector3(47.5F, 10, 20);
-                        Instantiate(verticalWall, spawnPosition, spawnRotation);
-                        spawnPosition = new Vector3(50, 10, 20);
-                        Instantiate(verticalWall, spawnPosition, spawnRotation);
-                        break;
-                    case 2:
-                        spawnPosition = new Vector3(50, 10, 20);
-                        Instantiate(verticalWall, spawnPosition, spawnRotation);
-                        spawnPosition = new Vector3(52.5F, 10, 20);
-                        Instantiate(verticalWall, spawnPosition, spawnRotation);
-                        break;
-                    case 3:
-                        spawnPosition = new Vector3(47.5F, 10, 20);
-                        Instantiate(verticalWall, spawnPosition, spawnRotation);
-                        spawnPosition = new Vector3(52.5F, 10, 20);
-                        Instantiate(verticalWall, spawnPosition, spawnRotation);
-                        break;
-                    default:
-                        break;
+                case 1:
+                    spawnPosition = new Vector3(47.5F, 10, 20);
+                    Instantiate(verticalWall, spawnPosition, spawnRotation);
+                    spawnPosition = new Vector3(50, 10, 20);
+                    Instantiate(verticalWall, spawnPosition, spawnRotation);
+                    break;
+                case 2:
+                    spawnPosition = new Vector3(50, 10, 20);
+                    Instantiate(verticalWall, spawnPosition, spawnRotation);
+                    spawnPosition = new Vector3(52.5F, 10, 20);
+                    Instantiate(verticalWall, spawnPosition, spawnRotation);
+                    break;
+                case 3:
+                    spawnPosition = new Vector3(47.5F, 10, 20);
+                    Instantiate(verticalWall, spawnPosition, spawnRotation);
+                    spawnPosition = new Vector3(52.5F, 10, 20);
+                    Instantiate(verticalWall, spawnPosition, spawnRotation);
+                    break;
+                default:
+                    break;
 
-                }
             }
+
             // create wall for top view
             spawnPosition = new Vector3(100, 2.9F, 20);
             Instantiate(horizontalUpperWall, spawnPosition, spawnRotation);
@@ -357,7 +336,7 @@ public class GameController : MonoBehaviour {
             case State.STATE_DUCKING:
 				if (currentView != View.VIEW_TOP)
 					break;
-				if (duckPosY > 0 && !ducked)
+				if (duckPosY > 0.5 && !ducked)
                 {
                     player.transform.position = new Vector3(player.transform.position.x, duckPosY, player.transform.position.z);
                     accelerator += 0.05F;

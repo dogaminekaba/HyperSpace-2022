@@ -6,6 +6,11 @@ public class PlayerController : MonoBehaviour {
 
     public GameObject sheild1, sheild2, sheild3, sheild4;
     public GameObject explosionPrefab;
+    public AudioSource hitWallSound;
+    public AudioSource pickupSheildSound;
+    public AudioSource pickupTreeSound;
+    public AudioSource gameOverSound;
+
     private GameObject explosion;
     private int lives = 3;
     private int scoreTop = 0;
@@ -24,31 +29,32 @@ public class PlayerController : MonoBehaviour {
     {
         if (other.tag == "Sheild")
         {
+            pickupSheildSound.Play();
             addLive(lives);
             Destroy(other.gameObject);
         }
         else if(other.tag == "Alien")
         {
+            pickupTreeSound.Play();
             increaseScore();
             Destroy(other.gameObject);
         }
         else
         {
-            if (lives < 2)
+            if (lives > 1)
             {
-                if (explosion != null)
-                    Destroy(explosion);
-                explosion = (GameObject)Instantiate(explosionPrefab, transform.position, transform.rotation);
-                removeLive(lives);
-            }
+				hitWallSound.Play();
+			}
             else
             {
-                if (explosion != null)
-                    Destroy(explosion);
-                explosion = (GameObject)Instantiate(explosionPrefab, transform.position, transform.rotation);
-                removeLive(lives);
+				gameOverSound.Play();
             }
-        }
+
+			if (explosion != null)
+				Destroy(explosion);
+			explosion = (GameObject)Instantiate(explosionPrefab, transform.position, transform.rotation);
+			removeLive(lives);
+		}
     }
 
     public void decreaseLives()
