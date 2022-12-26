@@ -18,7 +18,27 @@ public class InputController : MonoBehaviour {
         Lean.LeanTouch.OnFingerSwipe -= OnFingerSwipe;
     }
 
-    public void OnFingerSwipe(Lean.LeanFinger finger)
+    private void Update()
+    {
+		if (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow))
+        {
+            gc.movePlayer(GameController.LaneState.STATE_MOVELEFT);
+        }
+        else if (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow))
+        {
+			gc.movePlayer(GameController.LaneState.STATE_MOVERIGHT);
+		}
+		else if (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow))
+		{
+			gc.movePlayer(GameController.State.STATE_JUMPING);
+		}
+		else if (Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow))
+		{
+			gc.movePlayer(GameController.State.STATE_DUCKING);
+		}
+	}
+
+	public void OnFingerSwipe(Lean.LeanFinger finger)
     {
         var swipe = finger.SwipeDelta;
 

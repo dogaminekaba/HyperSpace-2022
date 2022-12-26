@@ -415,35 +415,54 @@ public class GameController : MonoBehaviour {
             playerShadow.transform.position = new Vector3(newX, playerShadow.transform.position.y, player.transform.position.z);
         }
 
-        if (Input.GetMouseButtonDown(0) && !endScreenUI.activeInHierarchy)
+        if(!endScreenUI.activeInHierarchy)
         {
-            mouseDownY = Input.mousePosition.y;
-        }
-        else if (Input.GetMouseButtonUp(0) && !endScreenUI.activeInHierarchy)
-        {
-            mouseUpY = Input.mousePosition.y;
-            float tapTreshold = Mathf.Abs(mouseDownY - mouseUpY);
-
-            if (tapTreshold < Screen.height * 0.005f)
+            if (Input.GetMouseButtonDown(0))
             {
-                if (mouseDownY > Screen.height * 2 / 3)
-                {
-                    currentRef = refTopCenter;
-                    changeView(View.VIEW_TOP);
-                }
-                else if ((mouseDownY >= Screen.height * 1 / 3) && (mouseDownY <= Screen.height * 2 / 3))
-                {
-                    currentRef = refMidCenter;
-                    changeView(View.VIEW_MID);
-                }
-                else if (mouseDownY < Screen.height * 1 / 3)
-                {
-                    currentRef = refBottomCenter;
-                    changeView(View.VIEW_BOTTOM);
-                }
-                playerControl.changeView(currentView);
+                mouseDownY = Input.mousePosition.y;
             }
-        }
+            else if (Input.GetMouseButtonUp(0))
+            {
+                mouseUpY = Input.mousePosition.y;
+                float tapTreshold = Mathf.Abs(mouseDownY - mouseUpY);
+
+                if (tapTreshold < Screen.height * 0.005f)
+                {
+                    if (mouseDownY > Screen.height * 2 / 3)
+                    {
+                        currentRef = refTopCenter;
+                        changeView(View.VIEW_TOP);
+                    }
+                    else if ((mouseDownY >= Screen.height * 1 / 3) && (mouseDownY <= Screen.height * 2 / 3))
+                    {
+                        currentRef = refMidCenter;
+                        changeView(View.VIEW_MID);
+                    }
+                    else if (mouseDownY < Screen.height * 1 / 3)
+                    {
+                        currentRef = refBottomCenter;
+                        changeView(View.VIEW_BOTTOM);
+                    }
+                    playerControl.changeView(currentView);
+                }
+            }
+            else if(Input.GetKeyDown(KeyCode.Alpha1))
+            {
+				currentRef = refTopCenter;
+				changeView(View.VIEW_TOP);
+			}
+            else if (Input.GetKeyDown(KeyCode.Alpha2))
+			{
+				currentRef = refMidCenter;
+				changeView(View.VIEW_MID);
+			}
+			else if (Input.GetKeyDown(KeyCode.Alpha3))
+			{
+				currentRef = refBottomCenter;
+				changeView(View.VIEW_BOTTOM);
+			}
+
+		}
 
         if (playerControl.getLives() < 3)
             needLife = true;
