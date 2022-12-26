@@ -17,7 +17,7 @@ public class PickUpController : MonoBehaviour {
 
         if (t.position.z < -20)
         {
-            Destroy(GetComponent<GameObject>());
+            Destroy(this.gameObject);
         }
 	}
 }

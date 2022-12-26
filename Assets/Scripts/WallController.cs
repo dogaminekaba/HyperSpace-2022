@@ -15,23 +15,6 @@ public class WallController : MonoBehaviour
     void Update()
     {
         t.Translate(0, 0, -speed * Time.deltaTime);
-        if (t.position.z < -20)
-        {
-            if (t.tag == "Horizontal Wall")
-                t.position = new Vector3(t.position.x, t.position.y, 20);
-            else if (t.tag == "Vertical Wall")
-                rePosVerticalWalls();
-        }
-    }
-
-    void rePosVerticalWalls()
-    {
-        if (t.position.x < 49)
-            t.position = new Vector3(52.5F, t.position.y, 20);
-        else if(t.position.x > 51)
-            t.position = new Vector3(50, t.position.y, 20);
-        else
-            t.position = new Vector3(47.5F, t.position.y, 20);
     }
 
 }

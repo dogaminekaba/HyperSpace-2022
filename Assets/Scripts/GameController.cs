@@ -4,7 +4,6 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using System;
 using System.Collections.Generic;
-using static GameController;
 
 public class GameController : MonoBehaviour {
 
@@ -46,14 +45,13 @@ public class GameController : MonoBehaviour {
     public GameObject gridPrefab;
     public GameObject player;
     private GameObject playerShadow;
-    private float startWait = 0;
     private float speed = 8;
     private float maxSpeed = 18;
     private float jumpPosY;
     private float duckPosY;
     private State currentState = State.STATE_STANDING;
     private Location currentLocation = Location.LOCATION_CENTER;
-    private View currentView = View.VIEW_TOP;
+    private View currentView = View.VIEW_BOTTOM;
     private float timeCounter = 0;
     private float playerStartPosX = 0;
     private float vel = 20F;
@@ -63,7 +61,6 @@ public class GameController : MonoBehaviour {
     private Vector3 currentRef;
     private float mouseDownY;
     private float mouseUpY;
-    private int count;
     private int verticalPosition;
     private float accelerator = 0;
     private bool jumped = false;
@@ -92,9 +89,8 @@ public class GameController : MonoBehaviour {
         // wall rotation
         Quaternion spawnRotation = Quaternion.identity;
 		// generate player object
-		Vector3 spawnPosition = new Vector3(0, 0.1F, -16);
-        playerShadow = Instantiate(playerShadowPrefab, spawnPosition, spawnRotation);
-        spawnPosition = new Vector3(0, 1, -16);
+		Vector3 shadowPosition = new Vector3(0, 0.1F, -16);
+        playerShadow = Instantiate(playerShadowPrefab, shadowPosition, spawnRotation);
         WallController.speed = 0;
         GridController.speed = 0;
         PickUpController.speed = 0;
@@ -104,31 +100,76 @@ public class GameController : MonoBehaviour {
         playerControl = player.GetComponent<PlayerController>();
         scoreText.text = playerControl.getScore().ToString();
 
-		StartCoroutine(SpawnWalls());
-        StartCoroutine(UpdateSpeed());
-        StartCoroutine(SpawnPickUps());
-        StartCoroutine(reduceTreeLife());
+		GridController.speed = speed;
+		WallController.speed = speed;
+		PickUpController.speed = speed;
 
-        WallController.speed = speed;
-        GridController.speed = speed;
-        PickUpController.speed = speed;
+        StartCoroutine(SpawnGameObjects());
+        StartCoroutine(UpdateSpeed());
+        StartCoroutine(reduceTreeLife());
 
         endScreenUI.SetActive(false);
     }
 
-    IEnumerator SpawnPickUps()
+    IEnumerator SpawnGameObjects()
+    {
+        // walls are reused for better performance
+		List<GameObject> reusableObjects = new List<GameObject>();
+		reusableObjects.AddRange(SpawnGridAndWalls());
+
+		while (!gameEnded)
+		{
+            bool posReset = false;
+            foreach(GameObject obj in reusableObjects )
+            {
+                if(ResetPosition(obj))
+                    posReset = true; 
+            }
+            if (posReset)
+                SpawnPickUps();
+
+            yield return null;
+		}
+	}
+
+    private bool ResetPosition(GameObject obj)
+    {
+        bool posReset = false;
+        Transform t = obj.transform;
+		int spawnPosZ = 40;
+
+		if (t.tag == "Horizontal Wall" && t.position.z < -20)
+        {
+            t.position = new Vector3(t.position.x, t.position.y, spawnPosZ);
+            posReset = true;
+		}
+        else if (t.tag == "Vertical Wall" && t.position.z < -20)
+        {
+			if (t.position.x < 49)
+                t.position = new Vector3(52.5F, t.position.y, spawnPosZ);
+            else if (t.position.x > 51)
+                t.position = new Vector3(50, t.position.y, spawnPosZ);
+            else
+                t.position = new Vector3(47.5F, t.position.y, spawnPosZ);
+			posReset = true;
+		}
+
+        return posReset;
+	}
+
+	void SpawnPickUps()
     {
 		Array values = Enum.GetValues(typeof(View));
-		System.Random random = new System.Random();
+		System.Random random = new System.Random(DateTime.Now.Millisecond);
         Vector3 PickUpPos;
         View sheildPosView;
 		View alienPosView;
 
-        while (!gameEnded)
+        if (!gameEnded)
         {
-			sheildPosView = (View)values.GetValue(random.Next(values.Length));
+            sheildPosView = (View)values.GetValue(random.Next(values.Length));
 
-            if (needLife)
+			if (needLife)
             {
                 PickUpPos = GetPickupPosition(sheildPosView);
 				pickUpFact.createSheild(PickUpPos, Quaternion.identity);
@@ -144,8 +185,6 @@ public class GameController : MonoBehaviour {
                 PickUpPos = GetPickupPosition(alienPosView);
 				pickUpFact.createAlien(PickUpPos, Quaternion.identity);
             }
-
-			yield return new WaitForSeconds(13F / speed);
 		}
         
     }
@@ -158,13 +197,13 @@ public class GameController : MonoBehaviour {
         switch (view)
         {
             case View.VIEW_TOP:
-                pos = new Vector3(refTopCenter.x + posX * 2.5F, refTopCenter.y, 15);
+                pos = new Vector3(refTopCenter.x + posX * 2.5F, refTopCenter.y, 30);
                 break;
             case View.VIEW_MID:
-                pos = new Vector3(refMidCenter.x + posX * 2.5F, refMidCenter.y, 15);
+                pos = new Vector3(refMidCenter.x + posX * 2.5F, refMidCenter.y, 30);
                 break;
             case View.VIEW_BOTTOM:
-                pos = new Vector3(refBottomCenter.x + posX * 2.5F, refBottomCenter.y, 15);
+                pos = new Vector3(refBottomCenter.x + posX * 2.5F, refBottomCenter.y, 30);
                 break;
 			default: break;
         }
@@ -172,22 +211,27 @@ public class GameController : MonoBehaviour {
         return pos;
 	}
 
-    IEnumerator SpawnWalls()
+    List<GameObject> SpawnGridAndWalls()
     {
-        yield return new WaitForSeconds(startWait);
+        // return wall objects to be able to change them later
+        List<GameObject> reusableObjs = new List<GameObject>();
+
+        // spawn grid
         Vector3 spawnPosition = new Vector3(0, 0, 0);
         Quaternion spawnRotation = Quaternion.identity;
         Instantiate(gridPrefab, spawnPosition, spawnRotation);
         spawnPosition = new Vector3(50, 0, 0);
-        Instantiate(gridPrefab, spawnPosition, spawnRotation);
-        spawnPosition = new Vector3(100, 0, 0);
-        Instantiate(gridPrefab, spawnPosition, spawnRotation);
+		Instantiate(gridPrefab, spawnPosition, spawnRotation);
+		spawnPosition = new Vector3(100, 0, 0);
+		Instantiate(gridPrefab, spawnPosition, spawnRotation);
 
-        for (int i = 0; i < 3; ++i )
+		for (int i = 0; i < 3; ++i )
         {
+            int spawnPosZ = i * 20;
+
             // create wall for bottom view
-            spawnPosition = new Vector3(0, 0.75F, 20);
-            Instantiate(horizontalWall, spawnPosition, spawnRotation);
+            spawnPosition = new Vector3(0, 0.75F, spawnPosZ);
+            reusableObjs.Add(Instantiate(horizontalWall, spawnPosition, spawnRotation));
 
             // create wall middle view
             // there are 3 different positions for vertical walls
@@ -200,22 +244,22 @@ public class GameController : MonoBehaviour {
             switch (verticalPosition)
             {
                 case 1:
-                    spawnPosition = new Vector3(47.5F, 10, 20);
-                    Instantiate(verticalWall, spawnPosition, spawnRotation);
-                    spawnPosition = new Vector3(50, 10, 20);
-                    Instantiate(verticalWall, spawnPosition, spawnRotation);
+                    spawnPosition = new Vector3(47.5F, 10, spawnPosZ);
+                    reusableObjs.Add(Instantiate(verticalWall, spawnPosition, spawnRotation));
+                    spawnPosition = new Vector3(50, 10, spawnPosZ);
+                    reusableObjs.Add(Instantiate(verticalWall, spawnPosition, spawnRotation));
                     break;
                 case 2:
-                    spawnPosition = new Vector3(50, 10, 20);
-                    Instantiate(verticalWall, spawnPosition, spawnRotation);
-                    spawnPosition = new Vector3(52.5F, 10, 20);
-                    Instantiate(verticalWall, spawnPosition, spawnRotation);
+                    spawnPosition = new Vector3(50, 10, spawnPosZ);
+                    reusableObjs.Add(Instantiate(verticalWall, spawnPosition, spawnRotation));
+                    spawnPosition = new Vector3(52.5F, 10, spawnPosZ);
+                    reusableObjs.Add(Instantiate(verticalWall, spawnPosition, spawnRotation));
                     break;
                 case 3:
-                    spawnPosition = new Vector3(47.5F, 10, 20);
-                    Instantiate(verticalWall, spawnPosition, spawnRotation);
-                    spawnPosition = new Vector3(52.5F, 10, 20);
-                    Instantiate(verticalWall, spawnPosition, spawnRotation);
+                    spawnPosition = new Vector3(47.5F, 10, spawnPosZ);
+                    reusableObjs.Add(Instantiate(verticalWall, spawnPosition, spawnRotation));
+                    spawnPosition = new Vector3(52.5F, 10, spawnPosZ);
+                    reusableObjs.Add(Instantiate(verticalWall, spawnPosition, spawnRotation));
                     break;
                 default:
                     break;
@@ -223,13 +267,13 @@ public class GameController : MonoBehaviour {
             }
 
             // create wall for top view
-            spawnPosition = new Vector3(100, 2.9F, 20);
-            Instantiate(horizontalUpperWall, spawnPosition, spawnRotation);
-            yield return new WaitForSeconds(13F / speed);
+            spawnPosition = new Vector3(100, 2.9F, spawnPosZ);
+            reusableObjs.Add(Instantiate(horizontalUpperWall, spawnPosition, spawnRotation));
         }
+        return reusableObjs;
     }
 
-    IEnumerator reduceTreeLife()
+	IEnumerator reduceTreeLife()
     {
         yield return new WaitForSeconds(5);
         int oldScore = playerControl.getScore();
@@ -261,9 +305,9 @@ public class GameController : MonoBehaviour {
     {
 		if (currentState != playerState)
 		{
-			currentState = playerState;
 			jumpPosY = player.transform.position.y;
 			duckPosY = player.transform.position.y;
+			currentState = playerState;
 		}
 	}
 
@@ -305,24 +349,25 @@ public class GameController : MonoBehaviour {
         scoreText.text = playerControl.getScore().ToString();
         if (player.gameObject == null)
             return;
-        switch(currentState)
+
+		switch (currentState)
         {
             case State.STATE_JUMPING:
-                if (currentView != View.VIEW_BOTTOM)
+				if (currentView != View.VIEW_BOTTOM)
                     break;
                 if (jumpPosY < 4 && !jumped)
                 {
                     player.transform.position = new Vector3(player.transform.position.x, jumpPosY, player.transform.position.z );
                     accelerator += 0.01F;
                     jumpPosY += Time.deltaTime * (accelerator + speed);
-                }
+				}
                 else if(player.transform.position.y > currentRef.y)
                 {
                     jumped = true;
                     player.transform.position = new Vector3(player.transform.position.x, jumpPosY, player.transform.position.z);
                     accelerator += 0.01F;
                     jumpPosY -= Time.deltaTime * (speed + accelerator);
-                }
+				}
                 else
                 {
                     jumped = false;
@@ -330,7 +375,7 @@ public class GameController : MonoBehaviour {
                     jumpPosY = player.transform.position.y;
                     accelerator = 0;
                     currentState = State.STATE_STANDING;
-                }
+				}
                 break;
             // inverse jump
             case State.STATE_DUCKING:
@@ -418,8 +463,6 @@ public class GameController : MonoBehaviour {
     {
         if(currentView != newView)
         {
-            currentLocation = Location.LOCATION_CENTER;
-            currentView = newView;
             switch(newView)
             {
                 case View.VIEW_TOP:
@@ -427,7 +470,7 @@ public class GameController : MonoBehaviour {
 					playerShadow.transform.position = new Vector3(refTopCenter.x + GetLaneXPos(currentLocation), playerShadow.transform.position.y, player.transform.position.z);
 					break;
                 case View.VIEW_MID:
-                    player.transform.position = new Vector3(refMidCenter.x + GetLaneXPos(currentLocation), refMidCenter.y, player.transform.position.z);
+					player.transform.position = new Vector3(refMidCenter.x + GetLaneXPos(currentLocation), refMidCenter.y, player.transform.position.z);
                     playerShadow.transform.position = new Vector3(refMidCenter.x + GetLaneXPos(currentLocation), playerShadow.transform.position.y, player.transform.position.z);
                     break;
                 case View.VIEW_BOTTOM:
@@ -437,8 +480,8 @@ public class GameController : MonoBehaviour {
                 default:
                     break;
             }
-            
-            currentState = State.STATE_STANDING;
+			currentView = newView;
+			currentState = State.STATE_STANDING;
             jumpPosY = 15;
         }
     }

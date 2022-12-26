@@ -8,6 +8,8 @@ public class InputController : MonoBehaviour {
     {
         // Hook into the OnSwipe event
         Lean.LeanTouch.OnFingerSwipe += OnFingerSwipe;
+
+        // TODO - Add keyboard input
     }
 
     protected virtual void OnDisable()
@@ -22,25 +24,21 @@ public class InputController : MonoBehaviour {
 
         if (swipe.x < -Mathf.Abs(swipe.y))
         {
-            //Debug.Log("left swipe");
             gc.movePlayer(GameController.LaneState.STATE_MOVELEFT);
         }
 
         if (swipe.x > Mathf.Abs(swipe.y))
         {
-            //Debug.Log("right swipe");
             gc.movePlayer(GameController.LaneState.STATE_MOVERIGHT);
         }
 
         if (swipe.y < -Mathf.Abs(swipe.x))
         {
-            //Debug.Log("down swipe");
             gc.movePlayer(GameController.State.STATE_DUCKING);
         }
 
         if (swipe.y > Mathf.Abs(swipe.x))
         {
-            //Debug.Log("up swipe");
             gc.movePlayer(GameController.State.STATE_JUMPING);
         }
     }
