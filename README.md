@@ -47,9 +47,9 @@ Unity Engine is used to develop the game. This was my first experience with Unit
 ## Screenshots from the Game:
 
 <p>
-  <img src="https://github.com/dogaminekaba/HyperSpace/blob/master/HyperSpace/1.png" height="350"/>
-  <img src="https://github.com/dogaminekaba/HyperSpace/blob/master/HyperSpace/2.png" height="350"/>
-  <img src="https://github.com/dogaminekaba/HyperSpace/blob/master/HyperSpace/3.png" height="350"/>
-  <img src="https://github.com/dogaminekaba/HyperSpace/blob/master/HyperSpace/4.png" height="350"/>
+  <img src="https://github.com/dogaminekaba/HyperSpace-2022/blob/main/hs-1.PNG" height="350"/>
+  <img src="https://github.com/dogaminekaba/HyperSpace-2022/blob/main/hs-2.PNG" height="350"/>
+  <img src="https://github.com/dogaminekaba/HyperSpace-2022/blob/main/hs-3.PNG" height="350"/>
+  <img src="https://github.com/dogaminekaba/HyperSpace-2022/blob/main/hs-4.PNG" height="350"/>
 </p>
 
